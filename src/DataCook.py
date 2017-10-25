@@ -3,6 +3,8 @@ import pandas as pd
 import nltk
 from tensorflow.contrib import learn
 from sklearn.preprocessing import OneHotEncoder
+import json
+import os.path
 
 
 class DataCook:
@@ -12,7 +14,7 @@ class DataCook:
         self.headers = self.features+self.labels
         self.dataframe = self.__get_dataframe__(file_name, delimiter=delimiter)
         self.vocab_processor_cache = []
-        self.input_vector = self.__get_selected_list__(selection_list=features, isLabel=False)
+        self.input_vector = self.__get_selected_list__(selection_list=features, is_label=False)
         self.label_vector = self.__get_selected_list__(selection_list=labels)
 
     def get_input_vector(self):
@@ -24,7 +26,7 @@ class DataCook:
     def __get_dataframe__(self, file_name, delimiter):
         return pd.read_csv(file_name, delimiter=delimiter, names=self.headers)
 
-    def __get_selected_list__(self, selection_list, isLabel=True):
+    def __get_selected_list__(self, selection_list, is_label=True):
         _dim = len(self.dataframe)
         result_vector = np.empty((_dim, 0))
         if len(selection_list) == 0:
@@ -35,7 +37,7 @@ class DataCook:
                 if len(self.dataframe[_each_key].unique()) > 0 and \
                                 type(self.dataframe[_each_key].unique()[0]) is str:
                     # String values are processed depending on whether they are labels or not
-                    if isLabel:
+                    if is_label:
                         labels = list(self.dataframe[_each_key].unique())
                         _inv_map = {_: index for index, _ in enumerate(labels)}
 
@@ -43,21 +45,22 @@ class DataCook:
                         self.dataframe['encoded_label_' + _each_key] = self.dataframe[_each_key].apply(
                             lambda row: _inv_map[row]
                         )
-                        _enc.fit(np.array([[each] for each in self.dataframe['encoded_label_' + _each_key].as_matrix()]))
-                        self.dataframe['encoded_label_' + _each_key] = self.dataframe['encoded_label_' + _each_key].apply(
-                            lambda row: _enc.transform(np.array([[row]])).data
-                        )
-                        result_vector = np.concatenate((result_vector,
-                                            self.dataframe['encoded_label_' + _each_key].as_matrix().reshape(_dim, 1)
-                                            ),
-                                           axis=1)
+                        _enc.fit(np.array([
+                            [each] for each in self.dataframe['encoded_label_' + _each_key].as_matrix()]))
+                        self.dataframe['encoded_label_' + _each_key] = self.dataframe['encoded_label_' + _each_key].\
+                            apply(lambda row: _enc.transform(np.array([[row]])).data)
+                        result_vector = np.concatenate(
+                            (result_vector, self.dataframe['encoded_label_' + _each_key].as_matrix().reshape(_dim, 1)),
+                            axis=1)
 
                     else:
-                        self.dataframe['tokenized_sents'] = self.dataframe[_each_key].apply(lambda row: nltk.word_tokenize(row))
+                        self.dataframe['tokenized_sents'] = self.dataframe[_each_key].apply(
+                            lambda row: nltk.word_tokenize(row))
                         self.dataframe['sents_length'] = self.dataframe['tokenized_sents'].apply(lambda row: len(row))
                         _max_document_length = self.dataframe['sents_length'].max()
                         _vocab_processor = learn.preprocessing.VocabularyProcessor(_max_document_length)
-                        _str_feature = np.array(list(_vocab_processor.fit_transform(self.dataframe[_each_key].tolist())))
+                        _str_feature = np.array(
+                            list(_vocab_processor.fit_transform(self.dataframe[_each_key].tolist())))
                         self.vocab_processor_cache.append(_vocab_processor)
                         result_vector = np.concatenate((result_vector, _str_feature), axis=1)
                 else:
@@ -68,13 +71,19 @@ class DataCook:
         return result_vector
 
 
+def initialize():
+    with open("../properties.json") as f:
+        return json.load(f)
+
+
 if __name__ == '__main__':
-    header_names = ['ID', 'CONTENT', 'EMOTICON', 'CONFIDENCE']
+    properties = initialize()
+    header_names = properties["header_names"]
     obj = DataCook(
-        file_name='../data/test.txt',
-                     features=header_names,
-                     labels=header_names[2:],
-                     delimiter='\t'
+        file_name=os.path.join(properties["data_location"], properties["filename"]),
+        features=header_names,
+        labels=header_names[2:],
+        delimiter='\t'
     )
-    X, y = (obj.get_input_vector() , obj.get_label_vector())
-    print(X,y)
+    X, y = (obj.get_input_vector(), obj.get_label_vector())
+    print(X, y)
