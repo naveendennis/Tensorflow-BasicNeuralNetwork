@@ -1,3 +1,3 @@
 # Tensorflow-BasicNeuralNetwork
 
-Basic Implementation of Neural Network using Tensorflow
+Basic Implementation of Neural Network using Tensorflow (in progress)
