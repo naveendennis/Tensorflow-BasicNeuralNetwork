@@ -1,5 +1,5 @@
 {
-  "filename" : "single_file.txt",
+  "filename" : "single_data_file.txt",
   "data_location" : "data",
   "header_names" : ["ID", "CONTENT", "EMOTICON", "CONFIDENCE"]
 }
