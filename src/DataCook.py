@@ -4,18 +4,8 @@ import nltk
 from tensorflow.contrib import learn
 from sklearn.preprocessing import OneHotEncoder
 import os.path
+from importlib import import_module
 
-
-def get_module():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('src',
-                                                  os.path.join(
-                                                      os.path.dirname(os.path.realpath(__name__)),
-                                                      'src',
-                                                      'Utils.py'))
-    src_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(src_module)
-    return src_module
 
 class DataCook:
     def __init__(self, file_name, features, labels, delimiter='\t'):
@@ -84,11 +74,12 @@ class DataCook:
 
 
 if __name__ == '__main__':
-    properties = get_module().Utils().initialize()
+    properties = import_module('Utils').Utils.initialize()
     header_names = properties["header_names"]
     obj = DataCook(
         file_name=os.path.join(
-            os.path.dirname(os.path.realpath(__name__)),
+            os.path.dirname(os.path.abspath(__file__)),
+            '..',
             properties["data_location"],
             properties["filename"]),
         features=header_names,

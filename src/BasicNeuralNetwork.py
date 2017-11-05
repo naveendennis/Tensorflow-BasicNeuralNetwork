@@ -1,16 +1,5 @@
 import os.path
-
-
-def get_module(file_name):
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('src',
-                                                  os.path.join(
-                                                      os.path.dirname(os.path.realpath(__name__)),
-                                                      'src',
-                                                      file_name))
-    src_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(src_module)
-    return src_module
+from importlib import import_module
 
 
 class BasicNeuralNetwork:
@@ -26,10 +15,11 @@ class BasicNeuralNetwork:
 
 
 if __name__ == '__main__':
-    properties = get_module('Utils.py').Utils.initialize()
+    properties = import_module('Utils').Utils.initialize()
     header_names = properties["header_names"]
-    obj = get_module('DataCook.py').DataCook(
-        file_name=os.path.join(os.path.dirname(os.path.realpath(__name__)),
+    obj = import_module('DataCook').DataCook(
+        file_name=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               '..',
                                properties["data_location"],
                                properties["filename"]),
         features=header_names,
